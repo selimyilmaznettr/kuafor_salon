@@ -16,11 +16,14 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { useAuth } from "@/context/auth-context";
 import { LogOut } from "lucide-react";
 
-export function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { logout } = useAuth();
-
+// Extracted Sidebar Content Component to prevent re-renders
+function SidebarContent({
+  location,
+  onNavigate
+}: {
+  location: string;
+  onNavigate?: () => void;
+}) {
   const navItems = [
     { href: "/", label: "Panel", icon: LayoutDashboard },
     { href: "/reports", label: "Raporlar", icon: PieChart },
@@ -29,7 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/settings", label: "Ayarlar", icon: SettingsIcon },
   ];
 
-  const NavContent = () => (
+  return (
     <>
       <div className="flex items-center gap-3 px-6 py-8">
         <div className="bg-gradient-to-br from-primary to-primary/80 p-2 rounded-lg shadow-lg shadow-primary/25">
@@ -54,7 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }
                 `}
-                onClick={() => setIsMobileOpen(false)}
+                onClick={onNavigate}
               >
                 <item.icon className={`w-5 h-5 ${isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary transition-colors"}`} />
                 <span className="font-medium">{item.label}</span>
@@ -65,27 +68,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       <div className="p-6 mt-auto border-t border-border/40">
-        <div className="bg-gradient-to-br from-accent/20 to-accent/10 rounded-2xl p-4 border border-accent/20">
-          <p className="text-sm font-medium text-accent-foreground mb-1">Hesap</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full bg-white/50 border-accent/30 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive text-xs h-8 gap-2 group transition-all"
-            onClick={logout}
-          >
-            <LogOut className="w-3 h-3 group-hover:scale-110 transition-transform" />
-            Çıkış Yap
-          </Button>
-        </div>
+        <LogoutButton />
       </div>
     </>
   );
+}
+
+function LogoutButton() {
+  const { logout } = useAuth();
+  return (
+    <div className="bg-gradient-to-br from-accent/20 to-accent/10 rounded-2xl p-4 border border-accent/20">
+      <p className="text-sm font-medium text-accent-foreground mb-1">Hesap</p>
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full bg-white/50 border-accent/30 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive text-xs h-8 gap-2 group transition-all"
+        onClick={() => logout()}
+      >
+        <LogOut className="w-3 h-3 group-hover:scale-110 transition-transform" />
+        Çıkış Yap
+      </Button>
+    </div>
+  );
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-muted/20 flex">
       {/* Sidebar Desktop */}
       <aside className="hidden lg:flex flex-col w-72 bg-white border-r border-border/40 fixed h-full z-10">
-        <NavContent />
+        <SidebarContent location={location} />
       </aside>
 
       {/* Mobile Header */}
@@ -104,9 +119,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-72">
             <div className="flex flex-col h-full">
-              <NavContent />
-              <div className="p-6 mt-auto border-t border-border/40">
-              </div>
+              <SidebarContent
+                location={location}
+                onNavigate={() => setIsMobileOpen(false)}
+              />
             </div>
           </SheetContent>
         </Sheet>
