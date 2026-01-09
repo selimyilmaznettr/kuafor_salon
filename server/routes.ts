@@ -43,7 +43,10 @@ export async function registerRoutes(
           field: err.errors[0].path.join('.'),
         });
       }
-      res.status(500).json({ message: "Failed to create customer" });
+      res.status(500).json({
+        message: "Failed to create customer",
+        details: err instanceof Error ? err.message : String(err)
+      });
     }
   });
 
@@ -80,7 +83,10 @@ export async function registerRoutes(
       res.json(appointments);
     } catch (error) {
       console.error("Failed to fetch appointments:", error);
-      res.status(500).json({ message: "Failed to fetch appointments. Check server logs." });
+      res.status(500).json({
+        message: "Failed to fetch appointments",
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
