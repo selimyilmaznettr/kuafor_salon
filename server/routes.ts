@@ -36,6 +36,7 @@ export async function registerRoutes(
       const customer = await storage.createCustomer(input);
       res.status(201).json(customer);
     } catch (err) {
+      console.error("Create Customer Error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
