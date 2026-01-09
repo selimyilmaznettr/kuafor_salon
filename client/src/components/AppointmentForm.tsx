@@ -1,8 +1,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertAppointmentSchema, type InsertAppointment, type Customer } from "@shared/schema";
+import { insertAppointmentSchema, type InsertAppointment, type Customer, type Service, type Employee } from "@shared/schema";
 import { useCreateAppointment, useUpdateAppointment } from "@/hooks/use-appointments";
-import { useCustomers } from "@/hooks/use-customers";
+import { useCustomers, useCreateCustomer } from "@/hooks/use-customers";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -28,28 +29,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { Loader2, Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 
 interface AppointmentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  appointment?: InsertAppointment & { id: number }; 
+  appointment?: InsertAppointment & { id: number };
   preselectedCustomerId?: number;
 }
 
-export function AppointmentForm({ 
-  open, 
-  onOpenChange, 
-  appointment, 
-  preselectedCustomerId 
+export function AppointmentForm({
+  open,
+  onOpenChange,
+  appointment,
+  preselectedCustomerId
 }: AppointmentFormProps) {
   const createMutation = useCreateAppointment();
   const updateMutation = useUpdateAppointment();
-  
-  // Need customers list for the dropdown
+  const createCustomerMutation = useCreateCustomer();
+
   const { data: customers = [] } = useCustomers();
+
+  // Quick Add Customer State
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+
+  const { data: services = [] } = useQuery<Service[]>({
+    queryKey: ["/api/services"]
+  });
+
+  const { data: employees = [] } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"]
+  });
 
   const isEditing = !!appointment;
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -58,6 +72,8 @@ export function AppointmentForm({
     resolver: zodResolver(insertAppointmentSchema),
     defaultValues: {
       customerId: preselectedCustomerId || 0,
+      serviceId: null,
+      employeeId: null,
       serviceType: "",
       appointmentTime: new Date(),
       status: "scheduled",
@@ -68,9 +84,12 @@ export function AppointmentForm({
 
   useEffect(() => {
     if (open) {
+      setIsCreatingCustomer(false);
       if (appointment) {
         form.reset({
           customerId: appointment.customerId,
+          serviceId: appointment.serviceId,
+          employeeId: appointment.employeeId,
           serviceType: appointment.serviceType,
           appointmentTime: new Date(appointment.appointmentTime),
           status: appointment.status,
@@ -80,6 +99,8 @@ export function AppointmentForm({
       } else {
         form.reset({
           customerId: preselectedCustomerId || undefined,
+          serviceId: null,
+          employeeId: null,
           serviceType: "",
           appointmentTime: new Date(),
           status: "scheduled",
@@ -90,13 +111,33 @@ export function AppointmentForm({
     }
   }, [open, appointment, preselectedCustomerId, form]);
 
+  const handleCreateCustomer = async () => {
+    if (!newCustomerName || !newCustomerPhone) return;
+
+    createCustomerMutation.mutate({
+      fullName: newCustomerName,
+      phoneNumber: newCustomerPhone,
+      email: "",
+      notes: "",
+    }, {
+      onSuccess: (newCustomer) => {
+        form.setValue("customerId", newCustomer.id);
+        setIsCreatingCustomer(false);
+        setNewCustomerName("");
+        setNewCustomerPhone("");
+      }
+    });
+  };
+
   const onSubmit = (data: InsertAppointment) => {
-    // Ensure date object
+    // Ensure data types
     const formattedData = {
       ...data,
       appointmentTime: new Date(data.appointmentTime),
       price: Number(data.price),
-      customerId: Number(data.customerId)
+      customerId: Number(data.customerId),
+      serviceId: data.serviceId ? Number(data.serviceId) : null,
+      employeeId: data.employeeId ? Number(data.employeeId) : null,
     };
 
     if (isEditing) {
@@ -109,6 +150,16 @@ export function AppointmentForm({
     }
   };
 
+  const handleServiceChange = (serviceId: string) => {
+    const id = Number(serviceId);
+    const service = services.find(s => s.id === id);
+    if (service) {
+      form.setValue("serviceId", id);
+      form.setValue("serviceType", service.name);
+      form.setValue("price", service.price);
+    }
+  };
+
   // Convert "datetime-local" input string to Date and back
   const formatDateTimeLocal = (date: Date | string) => {
     if (!date) return "";
@@ -117,44 +168,98 @@ export function AppointmentForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] rounded-2xl">
+      <DialogContent className="sm:max-w-[600px] rounded-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-serif">
-            {isEditing ? "Edit Appointment" : "New Appointment"}
+            {isEditing ? "Randevu Düzenle" : "Yeni Randevu"}
           </DialogTitle>
           <DialogDescription>
-            Schedule a service for a customer.
+            Müşteri için hizmet planlaması yapın.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
-            
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+
             <FormField
               control={form.control}
               name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(Number(val))}
-                    defaultValue={field.value?.toString()}
-                    value={field.value?.toString()}
-                    disabled={!!preselectedCustomerId && !isEditing}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map((c: Customer) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.fullName} ({c.phoneNumber})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Müşteri</FormLabel>
+                  {isCreatingCustomer ? (
+                    <div className="p-4 bg-muted/30 rounded-xl border border-dashed border-primary/20 space-y-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-semibold text-primary">Hızlı Müşteri Ekle</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsCreatingCustomer(false)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <Input
+                        placeholder="Ad Soyad"
+                        value={newCustomerName}
+                        onChange={(e) => setNewCustomerName(e.target.value)}
+                        className="bg-white"
+                      />
+                      <Input
+                        placeholder="Telefon"
+                        value={newCustomerPhone}
+                        onChange={(e) => setNewCustomerPhone(e.target.value)}
+                        className="bg-white"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="w-full"
+                        onClick={handleCreateCustomer}
+                        disabled={createCustomerMutation.isPending || !newCustomerName || !newCustomerPhone}
+                      >
+                        {createCustomerMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ekle ve Seç"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Select
+                          onValueChange={(val) => field.onChange(Number(val))}
+                          defaultValue={field.value?.toString()}
+                          value={field.value?.toString()}
+                          disabled={!!preselectedCustomerId && !isEditing}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="rounded-xl">
+                              <SelectValue placeholder="Müşteri seçin" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customers.map((c: Customer) => (
+                              <SelectItem key={c.id} value={c.id.toString()}>
+                                {c.fullName} ({c.phoneNumber})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {!preselectedCustomerId && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="rounded-xl shrink-0"
+                          onClick={() => setIsCreatingCustomer(true)}
+                          title="Yeni Müşteri Ekle"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -163,13 +268,27 @@ export function AppointmentForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="serviceType"
+                name="serviceId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service Type</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Haircut, Color" className="rounded-xl" {...field} />
-                    </FormControl>
+                    <FormLabel>Hizmet Seçimi</FormLabel>
+                    <Select
+                      onValueChange={handleServiceChange}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Hizmet seçin" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {services.map((s: Service) => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name} ({s.duration} dk - {s.price} ₺)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -177,39 +296,63 @@ export function AppointmentForm({
 
               <FormField
                 control={form.control}
-                name="price"
+                name="employeeId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        placeholder="0.00" 
-                        className="rounded-xl" 
-                        {...field}
-                        onChange={e => field.onChange(e.target.valueAsNumber)}
-                      />
-                    </FormControl>
+                    <FormLabel>Personel</FormLabel>
+                    <Select
+                      onValueChange={(val) => field.onChange(Number(val))}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-xl">
+                          <SelectValue placeholder="Personel seçin" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees.map((e: Employee) => (
+                          <SelectItem key={e.id} value={e.id.toString()}>
+                            {e.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="serviceType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Hizmet Detayı/Türü</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Örn: Saç Kesimi, Boya" className="rounded-xl" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="appointmentTime"
+                name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date & Time</FormLabel>
+                    <FormLabel>Ücret (₺)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="datetime-local" 
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0.00"
                         className="rounded-xl"
-                        value={formatDateTimeLocal(field.value)}
-                        onChange={(e) => field.onChange(new Date(e.target.value))}
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={e => field.onChange(e.target.valueAsNumber)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -222,18 +365,18 @@ export function AppointmentForm({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Durum</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="rounded-xl">
-                          <SelectValue placeholder="Status" />
+                          <SelectValue placeholder="Durum" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                        <SelectItem value="no-show">No Show</SelectItem>
+                        <SelectItem value="scheduled">Planlandı</SelectItem>
+                        <SelectItem value="completed">Tamamlandı</SelectItem>
+                        <SelectItem value="cancelled">İptal Edildi</SelectItem>
+                        <SelectItem value="no-show">Gelmedi</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -244,16 +387,35 @@ export function AppointmentForm({
 
             <FormField
               control={form.control}
+              name="appointmentTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tarih ve Saat</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      className="rounded-xl"
+                      value={formatDateTimeLocal(field.value)}
+                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Notes</FormLabel>
+                  <FormLabel>Notlar</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Special instructions..." 
-                      className="rounded-xl min-h-[80px] resize-none" 
-                      {...field} 
-                      value={field.value || ""} 
+                    <Textarea
+                      placeholder="Özel notlar..."
+                      className="rounded-xl min-h-[80px] resize-none"
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -263,17 +425,17 @@ export function AppointmentForm({
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
-                Cancel
+                İptal
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isPending}
                 className="rounded-xl bg-primary hover:bg-primary/90 text-white min-w-[100px]"
               >
                 {isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  isEditing ? "Save Changes" : "Schedule"
+                  isEditing ? "Kaydet" : "Planla"
                 )}
               </Button>
             </div>

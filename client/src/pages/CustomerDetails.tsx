@@ -1,12 +1,12 @@
 import { useCustomer } from "@/hooks/use-customers";
 import { useAppointments } from "@/hooks/use-appointments";
 import { useParams, useLocation } from "wouter";
-import { 
-  ArrowLeft, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  Edit, 
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  Calendar,
+  Edit,
   Plus,
   Clock
 } from "lucide-react";
@@ -45,9 +45,9 @@ export default function CustomerDetails() {
   if (!customer) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h2 className="text-2xl font-bold">Customer not found</h2>
+        <h2 className="text-2xl font-bold">Müşteri bulunamadı</h2>
         <Button variant="link" onClick={() => setLocation("/customers")}>
-          Go back to list
+          Listeye geri dön
         </Button>
       </div>
     );
@@ -58,19 +58,19 @@ export default function CustomerDetails() {
   return (
     <div className="space-y-8">
       {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        className="pl-0 hover:bg-transparent hover:text-primary transition-colors" 
+      <Button
+        variant="ghost"
+        className="pl-0 hover:bg-transparent hover:text-primary transition-colors"
         onClick={() => setLocation("/customers")}
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Customers
+        Müşterilere Dön
       </Button>
 
       {/* Header Profile */}
       <div className="bg-white rounded-3xl p-8 border border-border/50 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-        
+
         <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
           <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-white shadow-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
             <AvatarFallback className="text-3xl font-bold">
@@ -82,16 +82,16 @@ export default function CustomerDetails() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold font-display">{customer.fullName}</h1>
-                <p className="text-muted-foreground">Customer since {format(new Date(customer.createdAt!), "MMMM yyyy")}</p>
+                <p className="text-muted-foreground">Kayıt Tarihi: {format(new Date(customer.createdAt!), "d MMMM yyyy")}</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="rounded-xl" onClick={() => setIsEditOpen(true)}>
                   <Edit className="w-4 h-4 mr-2" />
-                  Edit Profile
+                  Profili Düzenle
                 </Button>
                 <Button className="rounded-xl bg-primary text-white hover:bg-primary/90" onClick={() => setIsApptOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  New Appointment
+                  Yeni Randevu
                 </Button>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function CustomerDetails() {
 
             {customer.notes && (
               <div className="bg-amber-50/50 border border-amber-100 p-4 rounded-xl mt-4 max-w-2xl">
-                <p className="text-sm text-amber-900 font-medium mb-1">Notes:</p>
+                <p className="text-sm text-amber-900 font-medium mb-1">Notlar:</p>
                 <p className="text-amber-800/80 text-sm leading-relaxed">{customer.notes}</p>
               </div>
             )}
@@ -121,8 +121,8 @@ export default function CustomerDetails() {
 
       {/* Appointment History */}
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold font-display">Appointment History</h2>
-        
+        <h2 className="text-2xl font-bold font-display">Randevu Geçmişi</h2>
+
         {apptLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-20 w-full rounded-2xl" />
@@ -144,17 +144,17 @@ export default function CustomerDetails() {
                           {format(new Date(apt.appointmentTime), "MMM")}
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="text-lg font-semibold">{apt.serviceType}</h4>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                           <div className="flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" />
-                            {format(new Date(apt.appointmentTime), "h:mm a")}
+                            {format(new Date(apt.appointmentTime), "HH:mm")}
                           </div>
                           {apt.price && (
                             <div className="font-medium text-foreground">
-                              ${apt.price}
+                              {apt.price} ₺
                             </div>
                           )}
                         </div>
@@ -167,10 +167,10 @@ export default function CustomerDetails() {
                     </div>
 
                     <div className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider
-                      ${apt.status === 'scheduled' ? 'bg-blue-50 text-blue-700' : 
+                      ${apt.status === 'scheduled' ? 'bg-blue-50 text-blue-700' :
                         apt.status === 'completed' ? 'bg-green-50 text-green-700' :
-                        apt.status === 'cancelled' ? 'bg-red-50 text-red-700' :
-                        'bg-gray-50 text-gray-700'}
+                          apt.status === 'cancelled' ? 'bg-red-50 text-red-700' :
+                            'bg-gray-50 text-gray-700'}
                     `}>
                       {apt.status}
                     </div>
@@ -181,13 +181,13 @@ export default function CustomerDetails() {
         ) : (
           <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-border/60">
             <Calendar className="w-10 h-10 text-muted-foreground/50 mx-auto mb-3" />
-            <p className="text-muted-foreground">No appointments recorded yet.</p>
-            <Button 
-              variant="link" 
-              className="text-primary mt-2" 
+            <p className="text-muted-foreground">Henüz kaydedilmiş randevu yok.</p>
+            <Button
+              variant="link"
+              className="text-primary mt-2"
               onClick={() => setIsApptOpen(true)}
             >
-              Schedule First Appointment
+              İlk Randevuyu Planla
             </Button>
           </div>
         )}
@@ -195,16 +195,16 @@ export default function CustomerDetails() {
 
       {/* Forms */}
       {isEditOpen && (
-        <CustomerForm 
-          open={isEditOpen} 
-          onOpenChange={setIsEditOpen} 
-          customer={customer} 
+        <CustomerForm
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          customer={customer}
         />
       )}
       {isApptOpen && (
-        <AppointmentForm 
-          open={isApptOpen} 
-          onOpenChange={setIsApptOpen} 
+        <AppointmentForm
+          open={isApptOpen}
+          onOpenChange={setIsApptOpen}
           preselectedCustomerId={customer.id}
         />
       )}

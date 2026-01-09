@@ -1,24 +1,32 @@
 import { Link, useLocation } from "wouter";
-import { 
-  Scissors, 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
+import {
+  Scissors,
+  LayoutDashboard,
+  Users,
+  Calendar,
   Menu,
-  X
+  Settings as SettingsIcon,
+  X,
+  PieChart
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 
+import { useAuth } from "@/context/auth-context";
+import { LogOut } from "lucide-react";
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { logout } = useAuth();
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/customers", label: "Customers", icon: Users },
-    { href: "/appointments", label: "Appointments", icon: Calendar },
+    { href: "/", label: "Panel", icon: LayoutDashboard },
+    { href: "/reports", label: "Raporlar", icon: PieChart },
+    { href: "/customers", label: "Müşteriler", icon: Users },
+    { href: "/appointments", label: "Randevular", icon: Calendar },
+    { href: "/settings", label: "Ayarlar", icon: SettingsIcon },
   ];
 
   const NavContent = () => (
@@ -29,10 +37,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Lumière</h1>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Salon Manager</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">Salon Takip</p>
         </div>
       </div>
-      
+
       <nav className="flex-1 px-4 space-y-2">
         {navItems.map((item) => {
           const isActive = location === item.href;
@@ -41,8 +49,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <div
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer group
-                  ${isActive 
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                  ${isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }
                 `}
@@ -55,13 +63,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
-      
-      <div className="p-6">
+
+      <div className="p-6 mt-auto border-t border-border/40">
         <div className="bg-gradient-to-br from-accent/20 to-accent/10 rounded-2xl p-4 border border-accent/20">
-          <p className="text-sm font-medium text-accent-foreground mb-1">Need Help?</p>
-          <p className="text-xs text-muted-foreground mb-3">Contact support for assistance with the system.</p>
-          <Button variant="outline" size="sm" className="w-full bg-white/50 border-accent/30 hover:bg-white text-xs h-8">
-            Support
+          <p className="text-sm font-medium text-accent-foreground mb-1">Hesap</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full bg-white/50 border-accent/30 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive text-xs h-8 gap-2 group transition-all"
+            onClick={logout}
+          >
+            <LogOut className="w-3 h-3 group-hover:scale-110 transition-transform" />
+            Çıkış Yap
           </Button>
         </div>
       </div>
@@ -92,6 +105,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <SheetContent side="left" className="p-0 w-72">
             <div className="flex flex-col h-full">
               <NavContent />
+              <div className="p-6 mt-auto border-t border-border/40">
+              </div>
             </div>
           </SheetContent>
         </Sheet>

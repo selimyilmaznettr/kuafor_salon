@@ -1,59 +1,100 @@
-import { useAppointments } from "@/hooks/use-appointments";
+import { useAppointments, useUpdateAppointment } from "@/hooks/use-appointments";
 import { useCustomers } from "@/hooks/use-customers";
-import { 
-  Users, 
-  Calendar, 
-  TrendingUp, 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Users,
+  Calendar,
+  TrendingUp,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  Activity,
+  CreditCard,
+  DollarSign,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format, isToday } from "date-fns";
+import { tr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Appointment, Customer, Employee } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+
+interface DashboardStats {
+  dailyRevenue: number;
+  weeklyRevenue: number;
+  monthlyRevenue: number;
+  yearlyRevenue: number;
+  totalCustomers: number;
+  todayAppointments: number;
+  recentActivity: Appointment[];
+}
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: appointments, isLoading: appsLoading } = useAppointments();
   const { data: customers, isLoading: customersLoading } = useCustomers();
+  const updateAppointment = useUpdateAppointment();
+
+  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+    queryKey: ["/api/dashboard-stats"]
+  });
+
+  const { data: employees } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+  });
+
+  const handleQuickComplete = (appointment: Appointment) => {
+    updateAppointment.mutate({
+      id: appointment.id,
+      status: "completed",
+    }, {
+      onSuccess: () => {
+        // Invalidate both stats and appointments to ensure consistency
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+        toast({
+          title: "İşlem Tamamlandı",
+          description: "Randevu başarıyla tamamlandı olarak işaretlendi.",
+        });
+      }
+    });
+  };
 
   // Compute Stats
   const todayAppointments = appointments?.filter(a => isToday(new Date(a.appointmentTime))) || [];
-  const activeCustomers = customers?.length || 0;
-  const completedApps = appointments?.filter(a => a.status === 'completed').length || 0;
-  
-  // Calculate total revenue (simple sum of all completed appointments)
-  const totalRevenue = appointments
-    ?.filter(a => a.status === 'completed')
-    .reduce((sum, app) => sum + (app.price || 0), 0) || 0;
 
-  const stats = [
+  const statCards = [
     {
-      title: "Today's Appointments",
-      value: todayAppointments.length.toString(),
-      subtext: "Scheduled for today",
-      icon: Calendar,
+      title: "Günlük Ciro",
+      value: `${stats?.dailyRevenue.toLocaleString('tr-TR')} ₺`,
+      subtext: "Bugün kazanılan",
+      icon: DollarSign,
       color: "bg-blue-500/10 text-blue-600"
     },
     {
-      title: "Total Customers",
-      value: activeCustomers.toString(),
-      subtext: "Active client base",
-      icon: Users,
+      title: "Haftalık Ciro",
+      value: `${stats?.weeklyRevenue.toLocaleString('tr-TR')} ₺`,
+      subtext: "Bu hafta",
+      icon: TrendingUp,
       color: "bg-purple-500/10 text-purple-600"
     },
     {
-      title: "Revenue",
-      value: `$${totalRevenue.toLocaleString()}`,
-      subtext: "Lifetime earnings",
-      icon: TrendingUp,
+      title: "Aylık Ciro",
+      value: `${stats?.monthlyRevenue.toLocaleString('tr-TR')} ₺`,
+      subtext: "Bu ay",
+      icon: CreditCard,
       color: "bg-emerald-500/10 text-emerald-600"
     },
     {
-      title: "Completed Services",
-      value: completedApps.toString(),
-      subtext: "Satisfied visits",
-      icon: Clock,
-      color: "bg-rose-500/10 text-rose-600"
+      title: "Yıllık Ciro",
+      value: `${stats?.yearlyRevenue.toLocaleString('tr-TR')} ₺`,
+      subtext: "Bu yıl",
+      icon: Activity,
+      color: "bg-orange-500/10 text-orange-600"
     }
   ];
 
@@ -72,7 +113,7 @@ export default function Dashboard() {
     show: { opacity: 1, y: 0 }
   };
 
-  if (appsLoading || customersLoading) {
+  if (appsLoading || customersLoading || statsLoading) {
     return (
       <div className="space-y-8">
         <div className="space-y-2">
@@ -91,18 +132,18 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground font-display">Dashboard</h1>
-        <p className="text-muted-foreground">Welcome back. Here is your daily overview.</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground font-display">Kontrol Paneli</h1>
+        <p className="text-muted-foreground">Tekrar hoşgeldiniz. Günlük özetiniz ve finansal durumunuz.</p>
       </div>
 
       {/* Stats Grid */}
-      <motion.div 
+      <motion.div
         variants={container}
         initial="hidden"
         animate="show"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
-        {stats.map((stat, idx) => (
+        {statCards.map((stat, idx) => (
           <motion.div key={idx} variants={item}>
             <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow duration-300 rounded-2xl overflow-hidden">
               <CardContent className="p-6">
@@ -117,7 +158,7 @@ export default function Dashboard() {
                 </div>
                 <div className="mt-4 flex items-center text-xs text-muted-foreground">
                   <ArrowUpRight className="w-3 h-3 mr-1 text-emerald-500" />
-                  <span className="text-emerald-500 font-medium mr-1">Updated</span>
+                  <span className="text-emerald-500 font-medium mr-1">Güncel</span>
                   {stat.subtext}
                 </div>
               </CardContent>
@@ -126,68 +167,138 @@ export default function Dashboard() {
         ))}
       </motion.div>
 
-      {/* Today's Schedule */}
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* Today's Schedule */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold font-display">Today's Schedule</h2>
-            <div className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM do")}</div>
+            <h2 className="text-xl font-bold font-display">Bugünün Programı</h2>
+            <div className="text-sm text-muted-foreground">
+              {format(new Date(), "dd MMMM yyyy, EEEE", { locale: tr })}
+            </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-border/50 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-border/50 shadow-sm overflow-hidden min-h-[300px]">
             {todayAppointments.length === 0 ? (
-              <div className="p-12 text-center flex flex-col items-center justify-center text-muted-foreground">
+              <div className="p-12 text-center flex flex-col items-center justify-center text-muted-foreground h-full">
                 <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4">
                   <Calendar className="w-8 h-8 opacity-50" />
                 </div>
-                <p className="text-lg font-medium">No appointments today</p>
-                <p className="text-sm max-w-xs mx-auto mt-1">Enjoy your free time or schedule a new customer.</p>
+                <p className="text-lg font-medium">Bugün randevu yok</p>
+                <p className="text-sm max-w-xs mx-auto mt-1">Boş zamanın tadını çıkarın veya yeni müşteri ekleyin.</p>
               </div>
             ) : (
               <div className="divide-y divide-border/40">
                 {todayAppointments
                   .sort((a, b) => new Date(a.appointmentTime).getTime() - new Date(b.appointmentTime).getTime())
-                  .map((app) => (
-                  <div key={app.id} className="p-4 sm:p-6 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center gap-4 group">
-                    <div className="flex flex-col items-center justify-center min-w-[80px] p-3 bg-primary/5 rounded-2xl text-primary border border-primary/10">
-                      <span className="text-xl font-bold">{format(new Date(app.appointmentTime), "HH:mm")}</span>
-                      <span className="text-xs font-medium uppercase tracking-wider">{format(new Date(app.appointmentTime), "a")}</span>
-                    </div>
-                    
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-lg">{customers?.find(c => c.id === app.customerId)?.fullName || "Unknown Customer"}</h4>
-                      <p className="text-muted-foreground">{app.serviceType}</p>
-                    </div>
+                  .map((app) => {
+                    const employee = employees?.find(e => e.id === app.employeeId);
 
-                    <div className="flex items-center gap-4">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium border
-                        ${app.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                          app.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
-                          app.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                          'bg-gray-50 text-gray-700 border-gray-200'}
+                    return (
+                      <div key={app.id} className="p-4 sm:p-6 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center gap-3 group">
+                        <div className="flex flex-col items-center justify-center min-w-[80px] p-3 bg-primary/5 rounded-2xl text-primary border border-primary/10">
+                          <span className="text-xl font-bold">{format(new Date(app.appointmentTime), "HH:mm")}</span>
+                        </div>
+
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg">
+                            {customers?.find(c => c.id === app.customerId)?.fullName || "Misafir Müşteri"}
+                          </h4>
+                          <div className="flex gap-2 text-sm text-muted-foreground">
+                            <span>{app.serviceType}</span>
+                            {employee && (
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full self-center flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                {employee.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className={`px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap
+                        ${app.status === 'scheduled' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              app.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
+                                app.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                                  'bg-gray-50 text-gray-700 border-gray-200'}
                       `}>
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                            {app.status === 'scheduled' ? 'Planlandı' :
+                              app.status === 'completed' ? 'Tamamlandı' :
+                                app.status === 'cancelled' ? 'İptal' : app.status}
+                          </div>
+
+                          {app.status === 'scheduled' && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => handleQuickComplete(app)}
+                              title="Tamamlandı olarak işaretle"
+                            >
+                              <CheckCircle className="h-5 w-5" />
+                            </Button>
+                          )}
+
+                          <div className="font-semibold text-muted-foreground min-w-[60px] text-right">
+                            {app.price ? `${app.price} ₺` : '-'}
+                          </div>
+                        </div>
                       </div>
-                      <div className="font-semibold text-muted-foreground">
-                        {app.price ? `$${app.price}` : '-'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions / Mini Calendar could go here */}
+        {/* Recent Activity Feed */}
         <div className="space-y-6">
-          <h2 className="text-xl font-bold font-display">Recent Activity</h2>
-          <div className="bg-white p-6 rounded-3xl border border-border/50 shadow-sm h-full max-h-[500px] flex flex-col items-center justify-center text-center">
-            <div className="w-full space-y-4">
-              {/* Placeholder for activity feed */}
-              <p className="text-muted-foreground text-sm">Activity feed coming soon...</p>
-            </div>
-          </div>
+          <h2 className="text-xl font-bold font-display">Son Aktiviteler</h2>
+          <Card className="rounded-3xl border-border/50 shadow-sm h-full max-h-[600px] overflow-hidden">
+            <CardContent className="p-0">
+              {stats?.recentActivity && stats.recentActivity.length > 0 ? (
+                <div className="divide-y divide-border/40">
+                  {stats.recentActivity.map((activity) => {
+                    const customerName = customers?.find(c => c.id === activity.customerId)?.fullName || "Misafir";
+                    const isCompleted = activity.status === 'completed';
+                    const isCancelled = activity.status === 'cancelled';
+
+                    return (
+                      <div key={activity.id} className="p-4 hover:bg-muted/30 transition-colors">
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-sm font-semibold">{customerName}</span>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {format(new Date(activity.appointmentTime), "d MMM", { locale: tr })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {activity.serviceType} ({format(new Date(activity.appointmentTime), "HH:mm")})
+                        </p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={`px-2 py-0.5 rounded-full border ${isCompleted
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : isCancelled
+                              ? 'bg-red-50 text-red-700 border-red-200'
+                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                            }`}>
+                            {isCompleted ? 'Tamamlandı' : isCancelled ? 'İptal' : 'İşlemde'}
+                          </span>
+                          <span className="font-medium text-muted-foreground">
+                            {activity.price} ₺
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  Henüz aktivite yok.
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
