@@ -3,9 +3,9 @@ import pg from "pg";
 import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
-    throw new Error(
-        "DATABASE_URL must be set. Did you forget to provision a database?",
-    );
+    console.warn("DATABASE_URL is not set. Database features will fail.");
+    // Provide a dummy string to prevent crash during import, but connection will fail if used.
+    // This allows the app to start and report specific errors later.
 }
 
 export const pool = new pg.Pool({

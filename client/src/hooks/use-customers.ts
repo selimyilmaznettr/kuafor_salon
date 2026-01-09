@@ -6,10 +6,10 @@ export function useCustomers(search?: string) {
   return useQuery({
     queryKey: [api.customers.list.path, { search }],
     queryFn: async () => {
-      const url = search 
+      const url = search
         ? `${api.customers.list.path}?search=${encodeURIComponent(search)}`
         : api.customers.list.path;
-      
+
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch customers");
       return api.customers.list.responses[200].parse(await res.json());
@@ -43,10 +43,22 @@ export function useCreateCustomer() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      
+
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create customer");
+        let errorMessage = "Failed to create customer";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const error = await res.json();
+            errorMessage = error.message || errorMessage;
+          } else {
+            errorMessage = await res.text() || res.statusText;
+          }
+        } catch (e) {
+          // Fallback if parsing fails
+          console.error("Error parsing response:", e);
+        }
+        throw new Error(errorMessage);
       }
       return api.customers.create.responses[201].parse(await res.json());
     },
@@ -75,8 +87,19 @@ export function useUpdateCustomer() {
       });
 
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to update customer");
+        let errorMessage = "Failed to update customer";
+        try {
+          const contentType = res.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const error = await res.json();
+            errorMessage = error.message || errorMessage;
+          } else {
+            errorMessage = await res.text() || res.statusText;
+          }
+        } catch (e) {
+          console.error("Error parsing response:", e);
+        }
+        throw new Error(errorMessage);
       }
       return api.customers.update.responses[200].parse(await res.json());
     },
