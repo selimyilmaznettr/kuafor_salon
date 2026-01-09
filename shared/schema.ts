@@ -1,61 +1,61 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // === TABLE DEFINITIONS ===
-export const customers = sqliteTable("customers", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
   phoneNumber: text("phone_number").notNull(),
   email: text("email"),
-  notes: text("notes"), // General preferences (e.g., "Likes coffee", "Sensitive scalp")
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(new Date()), // Default now
+  notes: text("notes"), // General preferences
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const services = sqliteTable("services", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const services = pgTable("services", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   duration: integer("duration").notNull().default(30), // in minutes
   price: integer("price").notNull().default(0),
-  isActive: integer("is_active", { mode: 'boolean' }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
-export const employees = sqliteTable("employees", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   role: text("role"),
-  isActive: integer("is_active", { mode: 'boolean' }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
-export const appointments = sqliteTable("appointments", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull(),
-  serviceId: integer("service_id"), // Nullable for migration/legacy
-  employeeId: integer("employee_id"), // Nullable initially
-  serviceType: text("service_type").notNull(), // Keep for legacy string support or display name
-  appointmentTime: integer("appointment_time", { mode: 'timestamp' }).notNull(),
+  serviceId: integer("service_id"),
+  employeeId: integer("employee_id"),
+  serviceType: text("service_type").notNull(),
+  appointmentTime: timestamp("appointment_time").notNull(),
   status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled
-  price: integer("price"), // Price in currency units
-  notes: text("notes"), // Specific notes for this appointment
-  notificationSent: integer("notification_sent", { mode: 'boolean' }).default(false),
+  price: integer("price"),
+  notes: text("notes"),
+  notificationSent: boolean("notification_sent").default(false),
 });
 
-export const notificationSettings = sqliteTable("notification_settings", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const notificationSettings = pgTable("notification_settings", {
+  id: serial("id").primaryKey(),
 
   // Netgsm Settings
   netgsmUser: text("netgsm_user").default(""),
   netgsmPassword: text("netgsm_password").default(""),
   netgsmHeader: text("netgsm_header").default(""),
-  smsEnabled: integer("sms_enabled", { mode: 'boolean' }).default(false),
+  smsEnabled: boolean("sms_enabled").default(false),
 
   // Email Settings
   smtpHost: text("smtp_host").default(""),
   smtpPort: integer("smtp_port").default(587),
   smtpUser: text("smtp_user").default(""),
   smtpPass: text("smtp_pass").default(""),
-  emailEnabled: integer("email_enabled", { mode: 'boolean' }).default(false),
+  emailEnabled: boolean("email_enabled").default(false),
 });
 
 // === RELATIONS ===

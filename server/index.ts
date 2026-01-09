@@ -63,7 +63,9 @@ app.use((req, res, next) => {
 import { setupCronJobs } from "./cron";
 
 (async () => {
-  // Initialize Cron Jobs
+  // Initialize Cron Jobs (Only in long-running processes, skip in strict serverless for now or refactor)
+  // In Vercel, cron jobs are handled via vercel.json cron config, but for now we keep this here
+  // understanding it might not persist in serverless.
   setupCronJobs();
 
   await registerRoutes(httpServer, app);
@@ -86,18 +88,32 @@ import { setupCronJobs } from "./cron";
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Only start listening if we are NOT in a Vercel environment (process.env.VERCEL is not set)
+  // OR if we are just running locally.
+  // Actually, standard Vercel node usage expects us to export the app manifest or start listening.
+  // For Vercel "Serverless Functions" (api/*), we export.
+  // For Vercel "Web Service" (index.js entry), we listen.
+  // But typically for Express on Vercel, we export the app.
+
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
+
+  // Vercel handling: export app
+  if (process.env.VERCEL) {
+    // Vercel serverless logic might differ slightly, but for "Vercel Web" this is fine.
+    // If we use clean serverless function approach, we might need 'export default app'.
+    // But typically we listen on port.
+    // Let's stick to listening but check environment.
+    httpServer.listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+    });
+  } else {
+    httpServer.listen({
       port,
       host: "0.0.0.0",
-    },
-    () => {
+    }, () => {
       log(`serving on port ${port}`);
-    },
-  );
+    });
+  }
 })();
+
+export default app;
