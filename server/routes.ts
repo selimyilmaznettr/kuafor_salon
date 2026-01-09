@@ -71,12 +71,17 @@ export async function registerRoutes(
 
   // === Appointments ===
   app.get(api.appointments.list.path, async (req, res) => {
-    const customerId = req.query.customerId ? Number(req.query.customerId) : undefined;
-    const from = req.query.from ? new Date(req.query.from as string) : undefined;
-    const to = req.query.to ? new Date(req.query.to as string) : undefined;
+    try {
+      const customerId = req.query.customerId ? Number(req.query.customerId) : undefined;
+      const from = req.query.from ? new Date(req.query.from as string) : undefined;
+      const to = req.query.to ? new Date(req.query.to as string) : undefined;
 
-    const appointments = await storage.getAppointments(customerId, from, to);
-    res.json(appointments);
+      const appointments = await storage.getAppointments(customerId, from, to);
+      res.json(appointments);
+    } catch (error) {
+      console.error("Failed to fetch appointments:", error);
+      res.status(500).json({ message: "Failed to fetch appointments. Check server logs." });
+    }
   });
 
   app.post(api.appointments.create.path, async (req, res) => {
