@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "../server/routes";
+// import { registerRoutes } from "../server/routes"; // Moved to dynamic import
 import { createServer } from "http";
 
 const app = express();
@@ -32,6 +32,7 @@ let startupError: Error | null = null;
 const setupPromise = (async () => {
     try {
         console.log("Initializing routes...");
+        const { registerRoutes } = await import("../server/routes");
         await registerRoutes(httpServer, app);
         isReady = true;
         console.log("Routes initialized successfully");
