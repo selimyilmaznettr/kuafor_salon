@@ -360,4 +360,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
+console.log("Initializing Storage...");
 export const storage = new DatabaseStorage();

@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 
+console.log("Importing Routes Module...");
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express

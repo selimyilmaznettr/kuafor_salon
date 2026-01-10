@@ -9,10 +9,11 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Use a dummy connection string if missing to prevent 'localhost' defaults which crash Vercel
+console.log("Initializing DB Pool...");
 export const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL || "postgres://user:pass@nonexistent-host:5432/db",
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
-    connectionTimeoutMillis: 5000, // Fail fast on connection
+    connectionTimeoutMillis: 5000,
 });
 
 // Log pool errors (unexpected backend issues)
