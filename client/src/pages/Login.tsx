@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,14 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { login } = useAuth();
+    const { login, user } = useAuth();
+    const [, setLocation] = useLocation();
+
+    // Redirect when user is authenticated
+    if (user) {
+        setLocation("/");
+        return null;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

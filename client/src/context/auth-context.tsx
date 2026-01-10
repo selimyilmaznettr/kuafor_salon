@@ -30,7 +30,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUser = { username };
         setUser(newUser);
         localStorage.setItem("salon_user", JSON.stringify(newUser));
-        setLocation("/");
     };
 
     const logout = () => {
