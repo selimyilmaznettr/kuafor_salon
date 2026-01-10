@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "../server/routes";
+// import { registerRoutes } from "../server/routes";
 import { createServer } from "http";
 
 const app = express();
@@ -33,7 +33,7 @@ const setupPromise = (async () => {
     try {
         console.log("Initializing routes...");
         // const { registerRoutes } = await import("../server/routes"); // Reverted to static to fix bundling
-        await registerRoutes(httpServer, app);
+        // await registerRoutes(httpServer, app);
         isReady = true;
         console.log("Routes initialized successfully");
     } catch (err) {
