@@ -50,7 +50,9 @@ export function useCreateCustomer() {
           const contentType = res.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             const error = await res.json();
-            errorMessage = error.message || errorMessage;
+            errorMessage = error.details
+              ? `${error.message}: ${error.details}`
+              : (error.message || errorMessage);
           } else {
             errorMessage = await res.text() || res.statusText;
           }
@@ -92,7 +94,9 @@ export function useUpdateCustomer() {
           const contentType = res.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             const error = await res.json();
-            errorMessage = error.message || errorMessage;
+            errorMessage = error.details
+              ? `${error.message}: ${error.details}`
+              : (error.message || errorMessage);
           } else {
             errorMessage = await res.text() || res.statusText;
           }

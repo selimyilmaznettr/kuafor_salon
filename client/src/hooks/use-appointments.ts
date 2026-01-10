@@ -19,7 +19,7 @@ export function useAppointments(filters?: AppointmentFilters) {
 
       const url = `${api.appointments.list.path}?${params.toString()}`;
       const res = await fetch(url, { credentials: "include" });
-      
+
       if (!res.ok) throw new Error("Failed to fetch appointments");
       const data = await res.json();
       return api.appointments.list.responses[200].parse(data);
@@ -44,7 +44,10 @@ export function useCreateAppointment() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to create appointment");
+        const errorMessage = error.details
+          ? `${error.message}: ${error.details}`
+          : (error.message || "Failed to create appointment");
+        throw new Error(errorMessage);
       }
       return api.appointments.create.responses[201].parse(await res.json());
     },
@@ -74,7 +77,10 @@ export function useUpdateAppointment() {
 
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || "Failed to update appointment");
+        const errorMessage = error.details
+          ? `${error.message}: ${error.details}`
+          : (error.message || "Failed to update appointment");
+        throw new Error(errorMessage);
       }
       return api.appointments.update.responses[200].parse(await res.json());
     },
