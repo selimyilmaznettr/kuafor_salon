@@ -15,10 +15,31 @@ app.use(express.urlencoded({ extended: false }));
 // However, registerRoutes mostly sets up express routes.
 
 // We wrap it in a promise-based handler for Vercel
+// Health check - Bypass DB to verify function runtime
+app.get("/api/health", (_req, res) => {
+    res.json({
+        status: "ok",
+        env: {
+            nodeEnv: process.env.NODE_ENV,
+            hasDbUrl: !!process.env.DATABASE_URL
+        }
+    });
+});
+
 let isReady = false;
+let startupError: Error | null = null;
+
 const setupPromise = (async () => {
-    await registerRoutes(httpServer, app);
-    isReady = true;
+    try {
+        console.log("Initializing routes...");
+        await registerRoutes(httpServer, app);
+        isReady = true;
+        console.log("Routes initialized successfully");
+    } catch (err) {
+        console.error("Critical: Failed to initialize routes:", err);
+        startupError = err as Error;
+        // Do not throw here to prevent process crash on cold start
+    }
 })();
 
 app.use((req, res, next) => {
@@ -27,13 +48,22 @@ app.use((req, res, next) => {
 });
 
 app.use(async (req, _res, next) => {
+    // If health check, skip initialization check
+    if (req.path === '/api/health') return next();
+
+    if (startupError) {
+        return next(startupError);
+    }
+
     try {
         if (!isReady) {
             await setupPromise;
+            // Check again in case it failed during await
+            if (startupError) return next(startupError);
         }
         next();
     } catch (err) {
-        console.error("Failed to initialize routes:", err);
+        console.error("Failed to initialize routes (middleware catch):", err);
         next(err);
     }
 });
