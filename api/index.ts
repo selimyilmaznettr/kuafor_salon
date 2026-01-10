@@ -21,20 +21,31 @@ const setupPromise = (async () => {
     isReady = true;
 })();
 
-app.use(async (req, res, next) => {
-    if (!isReady) {
-        await setupPromise;
-    }
+app.use((req, res, next) => {
+    console.log(`[API REQUEST] ${req.method} ${req.url}`);
     next();
 });
 
-// Mock cron jobs or just skip them in serverless (Vercel uses vercel.json for crons)
+app.use(async (req, _res, next) => {
+    try {
+        if (!isReady) {
+            await setupPromise;
+        }
+        next();
+    } catch (err) {
+        console.error("Failed to initialize routes:", err);
+        next(err);
+    }
+});
 
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-    console.error("API Error:", err);
-    res.status(status).json({ message });
+    console.error("API Error (Global):", err);
+    res.status(status).json({
+        message,
+        details: err instanceof Error ? err.message : String(err)
+    });
 });
 
 export default app;
