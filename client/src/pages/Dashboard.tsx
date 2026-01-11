@@ -67,31 +67,37 @@ export default function Dashboard() {
   // Compute Stats
   const todayAppointments = appointments?.filter(a => isToday(new Date(a.appointmentTime))) || [];
 
+  // Safe stats access to prevent crashes on network error
+  const dailyRevenue = stats?.dailyRevenue ?? 0;
+  const weeklyRevenue = stats?.weeklyRevenue ?? 0;
+  const monthlyRevenue = stats?.monthlyRevenue ?? 0;
+  const yearlyRevenue = stats?.yearlyRevenue ?? 0;
+
   const statCards = [
     {
       title: "Günlük Ciro",
-      value: `${stats?.dailyRevenue.toLocaleString('tr-TR')} ₺`,
+      value: `${dailyRevenue.toLocaleString('tr-TR')} ₺`,
       subtext: "Bugün kazanılan",
       icon: DollarSign,
       color: "bg-blue-500/10 text-blue-600"
     },
     {
       title: "Haftalık Ciro",
-      value: `${stats?.weeklyRevenue.toLocaleString('tr-TR')} ₺`,
+      value: `${weeklyRevenue.toLocaleString('tr-TR')} ₺`,
       subtext: "Bu hafta",
       icon: TrendingUp,
       color: "bg-purple-500/10 text-purple-600"
     },
     {
       title: "Aylık Ciro",
-      value: `${stats?.monthlyRevenue.toLocaleString('tr-TR')} ₺`,
+      value: `${monthlyRevenue.toLocaleString('tr-TR')} ₺`,
       subtext: "Bu ay",
       icon: CreditCard,
       color: "bg-emerald-500/10 text-emerald-600"
     },
     {
       title: "Yıllık Ciro",
-      value: `${stats?.yearlyRevenue.toLocaleString('tr-TR')} ₺`,
+      value: `${yearlyRevenue.toLocaleString('tr-TR')} ₺`,
       subtext: "Bu yıl",
       icon: Activity,
       color: "bg-orange-500/10 text-orange-600"
