@@ -1,8 +1,8 @@
 import cron from "node-cron";
-import { db } from "./db";
+import { db } from "./db.js";
 import { appointments, customers } from "@shared/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { sendSMS, sendEmail } from "./services/notification";
+import { sendSMS, sendEmail } from "./services/notification.js";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 

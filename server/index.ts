@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { serveStatic } from "./static";
+import { registerRoutes } from "./routes.js";
+import { serveStatic } from "./static.js";
 import { createServer } from "http";
 
 const app = express();
@@ -60,13 +60,13 @@ app.use((req, res, next) => {
   next();
 });
 
-import { setupCronJobs } from "./cron";
+// import { setupCronJobs } from "./cron.js";
 
 (async () => {
   // Initialize Cron Jobs (Only in long-running processes, skip in strict serverless for now or refactor)
   // In Vercel, cron jobs are handled via vercel.json cron config, but for now we keep this here
   // understanding it might not persist in serverless.
-  setupCronJobs();
+  // setupCronJobs();
 
   await registerRoutes(httpServer, app);
 
