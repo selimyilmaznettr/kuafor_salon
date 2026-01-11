@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import { storage } from "../storage";
+import { storage } from "../storage.js";
 
 export async function sendSMS(to: string, message: string): Promise<boolean> {
     const settings = await storage.getNotificationSettings();
