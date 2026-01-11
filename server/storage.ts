@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { db } from "./db.js";
 import {
   customers,
   appointments,
@@ -19,7 +19,7 @@ import {
   type NotificationSettings,
   type InsertNotificationSettings,
   notificationSettings
-} from "../shared/schema";
+} from "../shared/schema.js";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
