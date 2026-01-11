@@ -1,9 +1,9 @@
 
-import { db } from "../db";
-import { appointments, customers, notificationSettings } from "../../shared/schema";
+import { db } from "../db.js";
+import { appointments, customers, notificationSettings } from "../../shared/schema.js";
 import { eq, and, gte, lte, lt, or, isNull, sql } from "drizzle-orm";
-import { sendEmail, sendSMS } from "./notification";
-import { storage } from "../storage";
+import { sendEmail, sendSMS } from "./notification.js";
+import { storage } from "../storage.js";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
 
