@@ -14,7 +14,7 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
-    "module": "NodeNext",
+    "module": "ESNext",
     "strict": true,
     "lib": [
       "esnext",
@@ -24,8 +24,8 @@
     "jsx": "preserve",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": false,
-    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "bundler",
     "baseUrl": ".",
     "types": [
       "node",
