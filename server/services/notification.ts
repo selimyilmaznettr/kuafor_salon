@@ -42,9 +42,29 @@ export async function sendSMS(to: string, message: string): Promise<boolean> {
 
         const result = await response.text();
         console.log(`[SMS][NETGSM] Response: ${result}`);
+
+        // Simple check for success (Netgsm usually returns ID on success, or error code)
+        // Assuming if we got a response it's a "technical" success, but let's check content length or error keywords if possible.
+        // For XML API, it usually returns just a code like "00 123456"
+        const isSuccess = !result.startsWith("30") && !result.startsWith("40") && !result.startsWith("50") && !result.startsWith("70");
+
+        await storage.createNotificationLog({
+            type: 'sms',
+            recipient: to,
+            subject: 'SMS Notification',
+            status: isSuccess ? 'success' : 'error',
+            errorMessage: isSuccess ? null : `NetGsm Error: ${result}`
+        });
         return true;
     } catch (error) {
         console.error("[SMS][ERROR] Failed to send SMS:", error);
+        await storage.createNotificationLog({
+            type: 'sms',
+            recipient: to,
+            subject: 'SMS Notification',
+            status: 'error',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
         return false;
     }
 }
@@ -86,10 +106,24 @@ export async function sendEmail(to: string, subject: string, body: string): Prom
         });
 
         console.log(`[EMAIL] Message sent: ${info.messageId}`);
+        await storage.createNotificationLog({
+            type: 'email',
+            recipient: to,
+            subject: subject,
+            status: 'success',
+            errorMessage: null
+        });
         return true;
 
     } catch (error) {
         console.error("[EMAIL][ERROR] Failed to send email:", error);
+        await storage.createNotificationLog({
+            type: 'email',
+            recipient: to,
+            subject: subject,
+            status: 'error',
+            errorMessage: error instanceof Error ? error.message : String(error)
+        });
         return false;
     }
 }

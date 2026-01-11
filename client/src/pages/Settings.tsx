@@ -18,6 +18,7 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import NotificationSettingsForm from "./NotificationSettingsForm";
+import NotificationLogsTable from "@/components/NotificationLogsTable";
 
 export default function Settings() {
     const { toast } = useToast();
@@ -76,7 +77,7 @@ export default function Settings() {
     return (
         <div className="space-y-8">
             <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold tracking-tight font-display">Ayarlar</h1>
+                <h1 className="text-3xl font-bold tracking-tight font-display">Ayarlar <span className="text-sm font-normal text-muted-foreground ml-2">(v1.2)</span></h1>
                 <p className="text-muted-foreground">Hizmet, personel ve bildirim yönetimi.</p>
             </div>
 
@@ -185,8 +186,11 @@ export default function Settings() {
                             <CardTitle>Bildirim Ayarları</CardTitle>
                             <CardDescription>SMS ve E-posta bildirim yapılandırması.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-8">
                             <NotificationSettingsForm />
+                            <div className="border-t pt-6">
+                                <NotificationLogsTable />
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

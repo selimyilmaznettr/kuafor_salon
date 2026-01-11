@@ -39,6 +39,8 @@ export const appointments = pgTable("appointments", {
   price: integer("price"),
   notes: text("notes"),
   notificationSent: boolean("notification_sent").default(false),
+  reminderCount: integer("reminder_count").default(0),
+  lastReminderSentAt: timestamp("last_reminder_sent_at"),
 });
 
 export const notificationSettings = pgTable("notification_settings", {
@@ -56,6 +58,16 @@ export const notificationSettings = pgTable("notification_settings", {
   smtpUser: text("smtp_user").default(""),
   smtpPass: text("smtp_pass").default(""),
   emailEnabled: boolean("email_enabled").default(false),
+});
+
+export const notificationLogs = pgTable("notification_logs", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'email' | 'sms'
+  recipient: text("recipient").notNull(),
+  subject: text("subject"), // For emails
+  status: text("status").notNull(), // 'success' | 'error'
+  errorMessage: text("error_message"),
+  sentAt: timestamp("sent_at").defaultNow(),
 });
 
 // === RELATIONS ===
@@ -97,6 +109,8 @@ export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type NotificationSettings = typeof notificationSettings.$inferSelect;
 export type InsertNotificationSettings = typeof notificationSettings.$inferInsert;
+export type NotificationLog = typeof notificationLogs.$inferSelect;
+export type InsertNotificationLog = typeof notificationLogs.$inferInsert;
 
 // Request types
 export type CreateCustomerRequest = InsertCustomer;

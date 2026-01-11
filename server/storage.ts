@@ -18,7 +18,10 @@ import {
   type UpdateEmployeeRequest,
   type NotificationSettings,
   type InsertNotificationSettings,
-  notificationSettings
+  notificationSettings,
+  type NotificationLog,
+  type InsertNotificationLog,
+  notificationLogs
 } from "../shared/schema.js";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 
@@ -60,6 +63,10 @@ export interface IStorage {
   // Notification Settings
   getNotificationSettings(): Promise<NotificationSettings>;
   updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings>;
+
+  // Notification Logs
+  getNotificationLogs(): Promise<NotificationLog[]>;
+  createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -357,6 +364,15 @@ export class DatabaseStorage implements IStorage {
       .where(eq(notificationSettings.id, existing.id))
       .returning();
     return updated;
+  }
+
+  async getNotificationLogs(): Promise<NotificationLog[]> {
+    return await db.select().from(notificationLogs).orderBy(desc(notificationLogs.sentAt)).limit(50);
+  }
+
+  async createNotificationLog(log: InsertNotificationLog): Promise<NotificationLog> {
+    const [newLog] = await db.insert(notificationLogs).values(log).returning();
+    return newLog;
   }
 }
 

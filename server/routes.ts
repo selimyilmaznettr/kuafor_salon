@@ -3,6 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage.js";
 import { api } from "../shared/routes.js";
 import { z } from "zod";
+import { checkAndSendReminders } from "./services/reminders.js";
 
 console.log("Importing Routes Module...");
 
@@ -253,6 +254,35 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to update settings" });
     }
   });
+
+  // Get Notification Logs
+  app.get("/api/notifications/logs", async (_req, res) => {
+    try {
+      const logs = await storage.getNotificationLogs();
+      res.json(logs);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch notification logs" });
+    }
+  });
+
+  // CRON Endpoint for Reminders
+  app.get("/api/cron/reminders", async (_req, res) => {
+    try {
+      await checkAndSendReminders();
+      res.json({ message: "Reminders processed" });
+    } catch (err) {
+      console.error("Reminder Cron Error:", err);
+      res.status(500).json({ message: "Failed to process reminders" });
+    }
+  });
+
+  // Start background interval for local dev
+  const intervalId = setInterval(() => {
+    checkAndSendReminders().catch(console.error);
+  }, 60 * 1000); // Check every minute
+
+  // Cleanup on server close (optional, but good practice)
+  httpServer.on('close', () => clearInterval(intervalId));
 
   return httpServer;
 }
