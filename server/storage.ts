@@ -19,7 +19,7 @@ import {
   type NotificationSettings,
   type InsertNotificationSettings,
   notificationSettings
-} from "@shared/schema";
+} from "../shared/schema";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
