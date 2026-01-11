@@ -8,7 +8,7 @@ import {
   appointments,
   services,
   employees
-} from './schema';
+} from './schema.js';
 
 // ============================================
 // SHARED ERROR SCHEMAS
